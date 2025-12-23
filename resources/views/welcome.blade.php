@@ -222,8 +222,8 @@
             </div>
 
             <!-- Navigation -->
-            <a href="/home" class="glass-card p-3 rounded-xl hover:bg-white/30 transition-all duration-200 group">
-                <i data-feather="home" class="w-5 h-5 text-slate-600 group-hover:text-blue-600"></i>
+            <a href="/home" class="glass-card p-3 rounded-xl bg-white/40 transition-all duration-200">
+                <i data-feather="home" class="w-5 h-5 text-blue-600"></i>
             </a>
             <a href="/search" class="glass-card p-3 rounded-xl hover:bg-white/30 transition-all duration-200 group">
                 <i data-feather="search" class="w-5 h-5 text-slate-600 group-hover:text-blue-600"></i>

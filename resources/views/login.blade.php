@@ -224,27 +224,6 @@
                     </button>
                 </form>
 
-                <!-- Divider -->
-                <div class="relative my-8">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-white/50"></div>
-                    </div>
-                    <div class="relative flex justify-center">
-                        <span class="px-4 bg-transparent text-sm text-slate-600">or continue with</span>
-                    </div>
-                </div>
-
-                <!-- Social -->
-                <div class="grid grid-cols-1 gap-3">
-                    <button
-                        type="button"
-                        id="githubLogin"
-                        class="glass-button flex items-center justify-center py-4 px-4 rounded-xl hover:scale-[1.01]"
-                    >
-                        <i data-feather="github" class="w-6 h-6 mr-3"></i>
-                        <span class="font-semibold text-slate-800">Continue with GitHub</span>
-                    </button>
-                </div>
 
                 <!-- Sign Up -->
                 <div class="text-center mt-8">
@@ -252,15 +231,6 @@
                         Don't have an account?
                         <a href="{{ route('register') }}" class="font-semibold text-blue-600 hover:text-blue-700 transition-colors">Sign up</a>
                     </p>
-                </div>
-            </div>
-
-            <!-- Demo Credentials -->
-            <div class="glass-card rounded-2xl p-4 mt-6 text-center">
-                <p class="text-sm text-slate-600 mb-2">Demo Credentials</p>
-                <div class="text-xs text-slate-600 space-y-1">
-                    <div>Email: <span class="text-slate-800">demo@eduglass.com</span></div>
-                    <div>Password: <span class="text-slate-800">demo123</span></div>
                 </div>
             </div>
         </div>

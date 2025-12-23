@@ -16,116 +16,117 @@ class OrganizationController extends Controller
      * Display a listing of organizations for the search page
      */
     public function index(Request $request)
-{
-    $query = Organization::query();
+    {
+        $query = Organization::query();
 
-    // Apply search filter
-    if ($request->has('search') && $request->search) {
-        $searchTerm = $request->search;
-        $query->where(function ($q) use ($searchTerm) {
-            $q->where('nama', 'like', "%{$searchTerm}%")
-                ->orWhere('email', 'like', "%{$searchTerm}%")
-                ->orWhere('address', 'like', "%{$searchTerm}%")
-                ->orWhere('code', 'like', "%{$searchTerm}%")
-                ->orWhere('state', 'like', "%{$searchTerm}%")
-                ->orWhere('district', 'like', "%{$searchTerm}%")
-                ->orWhere('city', 'like', "%{$searchTerm}%");
-        });
-    }
-
-    // Apply state filter
-    if ($request->has('state') && $request->state) {
-        $query->where('state', $request->state);
-    }
-
-    // Apply status filter
-    if ($request->has('status') && $request->status) {
-        $query->where('status', $request->status === 'active' ? 1 : 0);
-    }
-
-    // Apply type filter
-    if ($request->has('filter') && $request->filter !== 'all') {
-        $type = $request->filter;
-        $query->where(function ($q) use ($type) {
-            if ($type === 'school') {
-                $q->where('nama', 'like', '%school%')
-                    ->orWhere('nama', 'like', '%sekolah%')
-                    ->orWhere('nama', 'like', '%SMK%')
-                    ->orWhere('nama', 'like', '%SJK%');
-            } elseif ($type === 'masjid') {
-                $q->where('nama', 'like', '%masjid%')
-                    ->orWhere('nama', 'like', '%surau%');
-            } elseif ($type === 'tuition') {
-                $q->where('nama', 'like', '%tuition%')
-                    ->orWhere('nama', 'like', '%tuisyen%')
-                    ->orWhere('nama', 'like', '%kelas%');
-            } elseif ($type === 'music') {
-                $q->where('nama', 'like', '%music%')
-                    ->orWhere('nama', 'like', '%piano%')
-                    ->orWhere('nama', 'like', '%guitar%');
-            }
-        });
-    }
-
-    // Apply sorting
-    $sort = $request->get('sort', 'relevance');
-    switch ($sort) {
-        case 'name':
-            $query->orderBy('nama', 'asc');
-            break;
-        case 'newest':
-            $query->orderBy('created_at', 'desc');
-            break;
-        case 'relevance':
-        default:
-            // Load counts first
-            $query->withCount(['users', 'classes'])
-                ->orderBy('users_count', 'desc')
-                ->orderBy('classes_count', 'desc')
-                ->orderBy('created_at', 'desc');
-            break;
-    }
-
-    // Paginate results
-    $perPage = $request->get('per_page', 12);
-
-    // Get current user ID
-    $currentUserId = Auth::id();
-
-    // Load organizations with their classes and check membership
-    $organizations = $query->with(['classes' => function ($q) use ($currentUserId) {
-        $q->select('classes.id', 'classes.nama', 'classes.status')
-            ->when($currentUserId, function ($query) use ($currentUserId) {
-                // Load membership status for each class
-                return $query->with(['members' => function ($query) use ($currentUserId) {
-                    $query->where('user_id', $currentUserId);
-                }]);
+        // Apply search filter
+        if ($request->has('search') && $request->search) {
+            $searchTerm = $request->search;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('nama', 'like', "%{$searchTerm}%")
+                    ->orWhere('email', 'like', "%{$searchTerm}%")
+                    ->orWhere('address', 'like', "%{$searchTerm}%")
+                    ->orWhere('code', 'like', "%{$searchTerm}%")
+                    ->orWhere('state', 'like', "%{$searchTerm}%")
+                    ->orWhere('district', 'like', "%{$searchTerm}%")
+                    ->orWhere('city', 'like', "%{$searchTerm}%");
             });
-    }])->paginate($perPage);
-
-    // Process each organization
-    foreach ($organizations as $org) {
-        // Determine organization type (use type_org if exists, otherwise infer from name)
-        if ($org->type_org) {
-            $org->type = strtolower($org->type_org);
-        } else {
-            $org->type = $this->determineOrganizationType($org->nama);
         }
-        $org->typeInfo = $this->getTypeInfo($org->type);
 
-        // Process each class in the organization
-        foreach ($org->classes as $class) {
-            // Check if current user is a member of this class
-            $class->is_member = $currentUserId ? $class->members->isNotEmpty() : false;
-
-            // Remove the members relationship to clean up the data
-            unset($class->members);
+        // Apply state filter
+        if ($request->has('state') && $request->state) {
+            $query->where('state', $request->state);
         }
+
+        // Apply status filter
+        if ($request->has('status') && $request->status) {
+            $query->where('status', $request->status === 'active' ? 1 : 0);
+        }
+
+        // Apply type filter
+        if ($request->has('filter') && $request->filter !== 'all') {
+            $type = $request->filter;
+            $query->where(function ($q) use ($type) {
+                if ($type === 'school') {
+                    $q->where('nama', 'like', '%school%')
+                        ->orWhere('nama', 'like', '%sekolah%')
+                        ->orWhere('nama', 'like', '%SMK%')
+                        ->orWhere('nama', 'like', '%SJK%');
+                } elseif ($type === 'masjid') {
+                    $q->where('nama', 'like', '%masjid%')
+                        ->orWhere('nama', 'like', '%surau%');
+                } elseif ($type === 'tuition') {
+                    $q->where('nama', 'like', '%tuition%')
+                        ->orWhere('nama', 'like', '%tuisyen%')
+                        ->orWhere('nama', 'like', '%kelas%');
+                } elseif ($type === 'music') {
+                    $q->where('nama', 'like', '%music%')
+                        ->orWhere('nama', 'like', '%piano%')
+                        ->orWhere('nama', 'like', '%guitar%');
+                }
+            });
+        }
+
+        // Apply sorting
+        $sort = $request->get('sort', 'relevance');
+        switch ($sort) {
+            case 'name':
+                $query->orderBy('nama', 'asc');
+                break;
+            case 'newest':
+                $query->orderBy('created_at', 'desc');
+                break;
+            case 'relevance':
+            default:
+                // Load counts first
+                $query->withCount(['users', 'classes'])
+                    ->orderBy('users_count', 'desc')
+                    ->orderBy('classes_count', 'desc')
+                    ->orderBy('created_at', 'desc');
+                break;
+        }
+
+        // Get current user ID
+        $currentUserId = Auth::id();
+
+        // Load ALL organizations with their classes and check membership
+        $organizations = $query->with(['classes' => function ($q) use ($currentUserId) {
+            $q->select('classes.id', 'classes.nama', 'classes.status')
+                ->when($currentUserId, function ($query) use ($currentUserId) {
+                    // Load membership status for each class
+                    return $query->with(['members' => function ($query) use ($currentUserId) {
+                        $query->where('user_id', $currentUserId);
+                    }]);
+                });
+        }])->get(); // Changed from paginate() to get()
+
+        // Process each organization
+        foreach ($organizations as $org) {
+            // Determine organization type (use type_org if exists, otherwise infer from name)
+            if ($org->type_org) {
+                $org->type = strtolower($org->type_org);
+            } else {
+                $org->type = $this->determineOrganizationType($org->nama);
+            }
+            $org->typeInfo = $this->getTypeInfo($org->type);
+
+            // Count active classes
+            $activeClasses = $org->classes->where('status', true);
+            $org->active_classes_count = $activeClasses->count();
+
+            // Process each class in the organization
+            foreach ($org->classes as $class) {
+                // Check if current user is a member of this class
+                $class->is_member = $currentUserId ? $class->members->isNotEmpty() : false;
+
+                // Remove the members relationship to clean up the data
+                unset($class->members);
+            }
+        }
+
+        // Return view for regular requests
+        return view('search', compact('organizations'));
     }
-
-    // Return view for regular requests
-    return view('search', compact('organizations'));
-}
 
     /**
      * Determine organization type based on name
@@ -294,7 +295,7 @@ class OrganizationController extends Controller
     }
     $organization->typeInfo = $this->getTypeInfo($organization->type);
 
-    // Get members
+    // Get members (with limit for initial load)
     $members = DB::table('organization_user')
         ->join('users', 'organization_user.user_id', '=', 'users.id')
         ->leftJoin('organization_roles', 'organization_user.role_id', '=', 'organization_roles.id')
@@ -310,6 +311,8 @@ class OrganizationController extends Controller
             'organization_roles.nama as role_name',
             'organization_user.role_id'
         )
+        ->orderBy('users.name', 'asc')
+        ->limit(12) // Initial load of 12 members
         ->get()
         ->map(function ($member) {
             return [
@@ -331,82 +334,109 @@ class OrganizationController extends Controller
     // Get current user ID
     $currentUserId = Auth::id();
 
-    // Get classes for this organization using a custom query to avoid timestamp issues
-    $classes = collect();
-
-    // First get class IDs from class_organization
+    // Get classes for this organization - INITIAL LOAD (9 classes)
+    $initialClasses = collect();
     $classData = DB::table('class_organization')
         ->where('organization_id', $id)
+        ->limit(9) // Initial load of 9 classes
         ->get();
 
     if ($classData->count() > 0) {
         $classIds = $classData->pluck('class_id');
 
-        // Get class details using ClassModel
-        $classes = ClassModel::whereIn('id', $classIds)
-    ->select('id', 'nama', 'status') // Remove created_at
-    ->with(['owner'])
-    ->withCount(['members as member_count'])
-    ->get();
+        // Get class details using ClassModel with proper relationships
+        $initialClasses = ClassModel::whereIn('id', $classIds)
+            ->with(['owner']) // Load owner relationship
+            ->withCount(['members as member_count']) // Add member count
+            ->orderBy('id', 'desc') // Use ID instead of created_at
+            ->get()
+            ->map(function ($class) use ($classData, $currentUserId, $id) {
+                // Find the organization data for this class
+                $orgData = $classData->where('class_id', $class->id)->first();
 
-        // Add organization-specific data to each class
-        $classes->each(function ($class) use ($classData, $currentUserId, $id) {
-            // Find the organization data for this class
-            $orgData = $classData->where('class_id', $class->id)->first();
+                // Check if user is a member of this class
+                if ($currentUserId) {
+                    $isMember = DB::table('class_user')
+                        ->where('class_id', $class->id)
+                        ->where('user_id', $currentUserId)
+                        ->exists();
+                    $class->is_member = $isMember;
+                } else {
+                    $class->is_member = false;
+                }
 
-            // Check if user is a member of this class
-            if ($currentUserId) {
-                $isMember = DB::table('class_user')
-                    ->where('class_id', $class->id)
-                    ->where('user_id', $currentUserId)
-                    ->exists();
-                $class->is_member = $isMember;
-            } else {
-                $class->is_member = false;
-            }
+                // Get teacher name
+                $class->teacher_name = $class->owner ? $class->owner->name : 'Unknown Teacher';
 
-            $class->teacher_name = $class->owner ? $class->owner->name : 'Unknown Teacher';
-            $class->code = 'CLS' . str_pad($class->id, 3, '0', STR_PAD_LEFT);
-            $class->formatted_status = $class->status ? 'active' : 'inactive';
-            $class->description = 'Class description here';
-            $class->name = $class->nama;
-            $class->created_at_formatted = $class->created_at ? $class->created_at->format('M d, Y') : 'Unknown date';
+                // Generate class code
+                $class->code = 'CLS' . str_pad($class->id, 3, '0', STR_PAD_LEFT);
 
-            // Add organ_user_id from class_organization
-            $class->organ_user_id = $orgData ? $orgData->organ_user_id : null;
-        });
+                // Status
+                $class->formatted_status = $class->status ? 'active' : 'inactive';
+
+                // Name alias
+                $class->name = $class->nama;
+
+                // Created date - use a default since we don't have created_at
+                $class->created_at_formatted = 'Unknown date';
+
+                // Check if user can join (must be organization member)
+                $class->can_join = $currentUserId ?
+                    DB::table('organization_user')
+                        ->where('organization_id', $id)
+                        ->where('user_id', $currentUserId)
+                        ->exists() : false;
+
+                return $class;
+            });
     }
+
+    // Get total classes count for the card
+    $totalClassesCount = DB::table('class_organization')
+        ->where('organization_id', $id)
+        ->count();
 
     // Get announcements
     $announcements = DB::table('organization_announcements')
-        ->where('organization_announcements.organization_id', $id)
-        ->leftJoin('users', 'organization_announcements.user_id', '=', 'users.id')
-        ->select(
-            'organization_announcements.*',
-            'users.name as author_name',
-            'users.username as author_username'
-        )
-        ->orderBy('organization_announcements.is_pinned', 'desc')
-        ->orderBy('organization_announcements.created_at', 'desc')
-        ->get()
-        ->map(function ($announcement) {
-            return [
-                'id' => $announcement->id,
-                'title' => $announcement->title,
-                'content' => $announcement->content,
-                'author' => $announcement->author_name,
-                'created_at' => $announcement->created_at,
-                'formatted_date' => Carbon::parse($announcement->created_at)->format('M d, Y'),
-                'is_pinned' => $announcement->is_pinned ?? false,
-                'status' => $announcement->status ?? 'published'
-            ];
-        });
+    ->where('organization_announcements.organization_id', $id)
+    ->leftJoin('users', 'organization_announcements.user_id', '=', 'users.id')
+    ->select(
+        'organization_announcements.*',
+        'users.name as author_name',
+        'users.username as author_username'
+    )
+    ->orderBy('organization_announcements.is_pinned', 'desc')
+    ->orderBy('organization_announcements.created_at', 'desc')
+    ->get()
+    ->map(function ($announcement) {
+        return [
+            'id' => $announcement->id,
+            'title' => $announcement->title,
+            'content' => $announcement->content,
+            'tahap' => $announcement->tahap,
+            'author' => $announcement->author_name,
+            'created_at' => $announcement->created_at,
+            'formatted_date' => Carbon::parse($announcement->created_at)->format('M d, Y'),
+            'is_pinned' => $announcement->is_pinned ?? false,
+            'status' => $announcement->status ?? 'published'
+        ];
+    });
 
     // Get counts
-    $memberCount = $members->count();
-    $classesCount = $classes->count();
-    $teachersCount = $members->where('role', 'teacher')->count();
-    $adminsCount = $members->where('is_admin', true)->count();
+    $memberCount = DB::table('organization_user')
+        ->where('organization_id', $id)
+        ->count();
+    $classesCount = $totalClassesCount;
+    $teachersCount = DB::table('organization_user')
+        ->where('organization_id', $id)
+        ->join('organization_roles', 'organization_user.role_id', '=', 'organization_roles.id')
+        ->where('organization_roles.nama', 'like', '%teacher%')
+        ->count();
+    $adminsCount = DB::table('organization_user')
+        ->where('organization_id', $id)
+        ->join('organization_roles', 'organization_user.role_id', '=', 'organization_roles.id')
+        ->whereIn('organization_roles.nama', ['Superadmin', 'Admin'])
+        ->count();
 
     // Check if current user can create class
     $userCanCreateClass = false;
@@ -427,7 +457,7 @@ class OrganizationController extends Controller
     return view('organization', compact(
         'organization',
         'members',
-        'classes',
+        'initialClasses',
         'announcements',
         'memberCount',
         'classesCount',
@@ -459,76 +489,79 @@ class OrganizationController extends Controller
      * Check if user is already a member via classes
      */
     public function checkMembershipViaClasses($orgId)
-{
-    $userId = Auth::id();
-    $isMember = false;
+    {
+        $userId = Auth::id();
+        $isMember = false;
 
-    if ($userId) {
-        // Check if user is member of any class in this organization
-        // Using class_organization pivot table
-        $isMember = DB::table('class_user')
-            ->join('class_organization', 'class_user.class_id', '=', 'class_organization.class_id')
-            ->where('class_organization.organization_id', $orgId)
-            ->where('class_user.user_id', $userId)
-            ->exists();
+        if ($userId) {
+            // Check if user is member of any class in this organization
+            // Using class_organization pivot table
+            $isMember = DB::table('class_user')
+                ->join('class_organization', 'class_user.class_id', '=', 'class_organization.class_id')
+                ->where('class_organization.organization_id', $orgId)
+                ->where('class_user.user_id', $userId)
+                ->exists();
+        }
+
+        return response()->json(['is_member' => $isMember]);
     }
-
-    return response()->json(['is_member' => $isMember]);
-}
 
     /**
      * Store a new announcement
      */
     public function storeAnnouncement(Request $request, $id)
-{
-    $organization = Organization::findOrFail($id);
+    {
+        $organization = Organization::findOrFail($id);
 
-    // Check if user has permission to create announcements
-    $userRole = DB::table('organization_user')
-        ->where('organization_id', $id)
-        ->where('user_id', Auth::id())
-        ->join('organization_roles', 'organization_user.role_id', '=', 'organization_roles.id')
-        ->select('organization_roles.nama as role_name')
-        ->first();
+        // Check if user has permission to create announcements
+        $userRole = DB::table('organization_user')
+            ->where('organization_id', $id)
+            ->where('user_id', Auth::id())
+            ->join('organization_roles', 'organization_user.role_id', '=', 'organization_roles.id')
+            ->select('organization_roles.nama as role_name')
+            ->first();
 
-    if (!$userRole || !in_array(strtolower($userRole->role_name), ['superadmin', 'admin'])) {
+        if (!$userRole || !in_array(strtolower($userRole->role_name), ['superadmin', 'admin'])) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to create announcements.'
+                ], 403);
+            }
+            return back()->with('error', 'You do not have permission to create announcements.');
+        }
+
+        $validated = $request->validate([
+    'title' => 'required|string|max:255',
+    'content' => 'required|string',
+    'tahap' => 'required|in:1,2,both',
+    'is_pinned' => 'boolean',
+    'send_notification' => 'boolean'
+]);
+
+        $announcementId = DB::table('organization_announcements')->insertGetId([
+    'organization_id' => $id,
+    'user_id' => Auth::id(),
+    'title' => $validated['title'],
+    'content' => $validated['content'],
+    'tahap' => $validated['tahap'],
+    'is_pinned' => $validated['is_pinned'] ?? false,
+    'send_notification' => $validated['send_notification'] ?? false,
+    'status' => 'published',
+    'created_at' => now(),
+    'updated_at' => now()
+]);
+
         if ($request->ajax()) {
             return response()->json([
-                'success' => false,
-                'message' => 'You do not have permission to create announcements.'
-            ], 403);
+                'success' => true,
+                'message' => 'Announcement created successfully!',
+                'announcement_id' => $announcementId
+            ]);
         }
-        return back()->with('error', 'You do not have permission to create announcements.');
+
+        return back()->with('success', 'Announcement created successfully!');
     }
-
-    $validated = $request->validate([
-        'title' => 'required|string|max:255',
-        'content' => 'required|string',
-        // Removed is_pinned and send_notification validation
-    ]);
-
-    $announcementId = DB::table('organization_announcements')->insertGetId([
-        'organization_id' => $id,
-        'user_id' => Auth::id(),
-        'title' => $validated['title'],
-        'content' => $validated['content'],
-        'is_pinned' => false, // Set default to false
-        'send_notification' => false, // Set default to false
-        'status' => 'published',
-        'created_at' => now(),
-        'updated_at' => now()
-    ]);
-
-    if ($request->ajax()) {
-        return response()->json([
-            'success' => true,
-            'message' => 'Announcement created successfully!',
-            'announcement_id' => $announcementId
-        ]);
-    }
-
-    return back()->with('success', 'Announcement created successfully!');
-}
 
     /**
      * Edit announcement
@@ -753,4 +786,187 @@ class OrganizationController extends Controller
         return redirect()->route('search')
             ->with('success', 'Organization deleted successfully!');
     }
+
+    /**
+     * Get members for organization with pagination (for AJAX)
+     */
+    public function getMembers(Request $request, $id)
+    {
+        $perPage = $request->get('per_page', 12);
+        $page = $request->get('page', 1);
+        $search = $request->get('search', '');
+        $role = $request->get('role', '');
+
+        $query = DB::table('organization_user')
+            ->join('users', 'organization_user.user_id', '=', 'users.id')
+            ->leftJoin('organization_roles', 'organization_user.role_id', '=', 'organization_roles.id')
+            ->where('organization_user.organization_id', $id);
+
+        // Apply search filter
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('users.name', 'like', "%{$search}%")
+                    ->orWhere('users.email', 'like', "%{$search}%")
+                    ->orWhere('users.username', 'like', "%{$search}%");
+            });
+        }
+
+        // Apply role filter
+        if ($role && in_array($role, ['admin', 'teacher', 'member'])) {
+            if ($role === 'admin') {
+                $query->where(function ($q) {
+                    $q->where('organization_roles.nama', 'like', '%admin%')
+                        ->orWhere('organization_roles.nama', 'like', '%superadmin%');
+                });
+            } elseif ($role === 'teacher') {
+                $query->where('organization_roles.nama', 'like', '%teacher%');
+            } else {
+                $query->where(function ($q) {
+                    $q->where('organization_roles.nama', 'like', '%member%')
+                        ->orWhereNull('organization_roles.nama');
+                });
+            }
+        }
+
+        // Get total count
+        $total = $query->count();
+
+        // Get paginated results
+        $members = $query->select(
+            'users.id',
+            'users.name',
+            'users.email',
+            'users.username',
+            'users.icno',
+            'users.telno',
+            'users.created_at as user_created_at',
+            'organization_roles.nama as role_name',
+            'organization_user.role_id'
+        )
+            ->orderBy('users.name', 'asc')
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
+            ->get()
+            ->map(function ($member) {
+                return [
+                    'id' => $member->id,
+                    'name' => $member->name ?? 'Unknown',
+                    'email' => $member->email,
+                    'username' => $member->username,
+                    'icno' => $member->icno,
+                    'telno' => $member->telno,
+                    'role' => $member->role_name ? strtolower($member->role_name) : 'member',
+                    'role_name' => $member->role_name ?? 'Member',
+                    'status' => 'active',
+                    'is_admin' => $member->role_name ?
+                        (str_contains(strtolower($member->role_name), 'admin') ? true : false) : false,
+                    'joined_date' => $member->user_created_at ?? now(),
+                    'formatted_date' => $member->user_created_at ?
+                        Carbon::parse($member->user_created_at)->format('M d, Y') :
+                        Carbon::now()->format('M d, Y')
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'members' => $members,
+            'total' => $total,
+            'has_more' => ($page * $perPage) < $total,
+            'current_page' => $page,
+            'per_page' => $perPage
+        ]);
+    }
+
+    /**
+     * Get classes for organization with pagination (for AJAX)
+     */
+    public function getClasses(Request $request, $id)
+{
+    $perPage = $request->get('per_page', 9);
+    $page = $request->get('page', 1);
+    $search = $request->get('search', '');
+    $status = $request->get('status', '');
+
+    // Get current user ID
+    $currentUserId = Auth::id();
+
+    // Get class IDs from class_organization
+    $query = DB::table('class_organization')
+        ->join('classes', 'class_organization.class_id', '=', 'classes.id')
+        ->where('class_organization.organization_id', $id);
+
+    // Apply search filter
+    if ($search) {
+        $query->where('classes.nama', 'like', "%{$search}%");
+    }
+
+    // Apply status filter
+    if ($status === 'active') {
+        $query->where('classes.status', true);
+    } elseif ($status === 'inactive') {
+        $query->where('classes.status', false);
+    }
+
+    // Get total count
+    $total = $query->count();
+
+    // Calculate offset
+    $offset = ($page - 1) * $perPage;
+
+    // Get class IDs for this page - order by class ID instead of created_at
+    $classIds = $query->select('classes.id')
+        ->orderBy('classes.id', 'desc') // Use ID instead of created_at
+        ->skip($offset)
+        ->take($perPage)
+        ->pluck('id');
+
+    // Get classes with details
+    $classes = ClassModel::whereIn('id', $classIds)
+        ->with(['owner'])
+        ->withCount(['members as member_count'])
+        ->orderBy('id', 'desc') // Use ID instead of created_at
+        ->get()
+        ->map(function ($class) use ($currentUserId, $id) {
+            // Check if user is a member of this class
+            if ($currentUserId) {
+                $isMember = DB::table('class_user')
+                    ->where('class_id', $class->id)
+                    ->where('user_id', $currentUserId)
+                    ->exists();
+                $class->is_member = $isMember;
+            } else {
+                $class->is_member = false;
+            }
+
+            // Check if user can join (is organization member)
+            $isOrgMember = DB::table('organization_user')
+                ->where('organization_id', $id)
+                ->where('user_id', $currentUserId)
+                ->exists();
+            $class->can_join = $isOrgMember;
+
+            return [
+                'id' => $class->id,
+                'name' => $class->nama,
+                'description' => $class->description ?? 'Class description here',
+                'teacher_name' => $class->owner ? $class->owner->name : 'Unknown Teacher',
+                'member_count' => $class->member_count,
+                'code' => 'CLS' . str_pad($class->id, 3, '0', STR_PAD_LEFT),
+                'status' => $class->status,
+                'formatted_status' => $class->status ? 'active' : 'inactive',
+                'is_member' => $class->is_member,
+                'can_join' => $class->can_join,
+                'created_at_formatted' => 'Unknown date' // Default value since no created_at
+            ];
+        });
+
+    return response()->json([
+        'success' => true,
+        'classes' => $classes,
+        'total' => $total,
+        'has_more' => ($page * $perPage) < $total,
+        'current_page' => $page,
+        'per_page' => $perPage
+    ]);
+}
 }

@@ -23,6 +23,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/organization/create', [OrganizationController::class, 'create'])->name('organization.create');
     Route::post('/organization', [OrganizationController::class, 'store'])->name('organization.store');
     Route::get('/organization/{id}', [OrganizationController::class, 'show'])->name('organization.show');
+    Route::get('/organization/{id}/members/load', [OrganizationController::class, 'getMembers'])->name('organization.members.load');
+Route::get('/organization/{id}/classes/load', [OrganizationController::class, 'getClasses'])->name('organization.classes.load');
 
     // Organization Management Routes (Organization owners/admins only)
     Route::get('/organization/{id}/edit', [OrganizationController::class, 'edit'])->name('organization.edit');
